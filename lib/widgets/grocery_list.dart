@@ -18,11 +18,18 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
+  bool _isLoading = true;
   List<GroceryItem> _groceryItems = [];
-  void _loadItems() async {
+  void loadItems() async {
     final url = Uri.https('flutter-demo-f2d20-default-rtdb.firebaseio.com',
         'shopping-app.json');
     final res = await http.get(url);
+    if(res.body=='null'){
+      setState(() {
+        _isLoading=false;
+      });
+      return;
+    }
     final Map<String, dynamic> listData = json.decode(res.body);
     final List<GroceryItem> _loadedItems = [];
 
@@ -42,7 +49,7 @@ class _GroceryListState extends State<GroceryList> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    _loadItems();
+    loadItems();
   }
   void _addItem() async {
     final newItem = await Navigator.of(context).push<GroceryItem>(
@@ -61,18 +68,27 @@ class _GroceryListState extends State<GroceryList> {
     setState(() {
       _groceryItems.add(newItem);
     });
-
+    // loadItems();
   }
 
   void _removeItem(GroceryItem item) {
+    final url = Uri.https('flutter-demo-f2d20-default-rtdb.firebaseio.com',
+        'shopping-app/${item.id}.json');
+    http.delete(url);
     setState(() {
       _groceryItems.remove(item);
+      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     Widget content = Center(child: Text('No items added yet'),);
+
+    if(_isLoading){
+      content = Center(child: CircularProgressIndicator(),);
+    }
+
     if (_groceryItems.isNotEmpty) {
       content = ListView.builder(
         itemCount: _groceryItems.length,
